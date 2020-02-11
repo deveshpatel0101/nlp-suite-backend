@@ -5,9 +5,9 @@ const app = express();
 
 require('./db/mongoose')();
 require('./db/redis');
-const signin = require('./routes/login');
+const login = require('./routes/login');
 const project = require('./routes/project');
-const signup = require('./routes/register');
+const register = require('./routes/register');
 const token = require('./routes/token');
 const usage = require('./routes/usage');
 
@@ -26,9 +26,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // routes
-app.use('/user/login', signin);
+app.use('/user/login', login);
 app.use('/user/project', project);
-app.use('/user/register', signup);
+app.use('/user/register', register);
 app.use('/project/token', token);
 app.use('/project/usage', usage);
 
