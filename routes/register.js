@@ -2,10 +2,11 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 
 const { registerUserSchema } = require('../validators/register');
+const uuid = require('uuid/v4');
 const User = require('../models/user.js');
 
 router.post('/', (req, res) => {
-  const regUser = { ...req.body, accountType: 'free', applications: [] };
+  const regUser = { ...req.body, accountType: 'free', projects: [], uid: uuid() };
   const validate = registerUserSchema.validate(regUser);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {

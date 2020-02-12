@@ -51,8 +51,8 @@ router.post('/', (req, res) => {
         }
 
         const jwtPayload = {
-          rid: result.id,
-          id: uuid(),
+          uid: result.uid,
+          rid: uuid(),
         };
         const jwtToken = jwt.sign(jwtPayload, process.env.JWT_KEY, {
           expiresIn: '1h',
@@ -65,7 +65,7 @@ router.post('/', (req, res) => {
             fname: result.fname,
             lname: result.lname,
             accountType: result.accountType,
-            applications: result.applications,
+            projects: result.projects,
           },
         });
       });

@@ -1,6 +1,7 @@
 const Joi = require('@hapi/joi');
 
 module.exports.registerUserSchema = Joi.object({
+  uid: Joi.string().required(),
   fname: Joi.string()
     .min(3)
     .required(),
@@ -15,7 +16,7 @@ module.exports.registerUserSchema = Joi.object({
     .required(),
   cpassword: Joi.equal(Joi.ref('password')).required(),
   accountType: Joi.string().equal('free'),
-  applications: Joi.array()
+  projects: Joi.array()
     .length(0)
     .required(),
 });

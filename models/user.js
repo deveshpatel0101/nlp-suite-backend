@@ -15,6 +15,10 @@ let UserSchema = new Schema({
     type: String,
     required: true,
   },
+  uid: {
+    type: String,
+    required: true,
+  },
   password: {
     type: String,
     required: true,
@@ -23,7 +27,7 @@ let UserSchema = new Schema({
     type: String,
     required: true,
   },
-  applications: {
+  projects: {
     type: Array,
     required: true,
   },
