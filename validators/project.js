@@ -8,21 +8,13 @@ module.exports.createProjectShcema = Joi.object({
   allowedApis: Joi.array()
     .min(1)
     .max(2)
-    .items(Joi.string().regex(/^(translator)$|^(entities)|^(sentiment)$|^(summarizer)$/))
+    .items(Joi.string().valid('entities', 'sentiment', 'summarizer', 'translator'))
     .required(),
   requests: Joi.object({
-    entities: Joi.array()
-      .length(0)
-      .required(),
-    sentiment: Joi.array()
-      .length(0)
-      .required(),
-    summarizer: Joi.array()
-      .length(0)
-      .required(),
-    translator: Joi.array()
-      .length(0)
-      .required(),
+    entities: Joi.array().length(0),
+    sentiment: Joi.array().length(0),
+    summarizer: Joi.array().length(0),
+    translator: Joi.array().length(0),
   }),
   secretToken: Joi.string().required(),
   createdAt: Joi.date().required(),

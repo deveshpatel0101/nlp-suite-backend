@@ -6,15 +6,49 @@ const User = require('../models/user');
 const auth = require('../middleware/auth');
 const { createProjectShcema } = require('../validators/project');
 
-router.get('/', (req, res) => {
-  return res.status(200).json({
-    msg: 'get: /user/project',
-  });
+router.get('/', auth, (req, res) => {
+  User.findOne({ uid: req.user.uid })
+    .then((response) => {
+      if (!response) {
+        return res.status(400).json({
+          error: true,
+          errorType: 'user',
+          errorMessage: 'User does not exist.',
+        });
+      }
+      const projects = response.projects;
+      for (let i = 0; i < projects.length; i++) {
+        delete projects[i].secretToken;
+        delete projects[i].requests;
+      }
+      return res.status(200).json({
+        error: false,
+        results: {
+          projects,
+          userData: {
+            fname: response.fname,
+            lname: response.lname,
+            accountType: response.accountType,
+          },
+        },
+      });
+    })
+    .catch((err) => {
+      return res.status(500).json({
+        error: true,
+        errorType: 'server',
+        errorMessage: err,
+      });
+    });
 });
 
 router.post('/', auth, (req, res) => {
   const data = req.body;
-  data.requests = { entities: [], translator: [], summarizer: [], sentiment: [] };
+  data.requests = {};
+  // initialize empty requests array for each allowed apis
+  for (let i = 0; i < data.allowedApis.length; i++) {
+    data.requests[data.allowedApis[i]] = [];
+  }
   data.pid = uuid();
   const payload = {
     uid: req.user.uid,
