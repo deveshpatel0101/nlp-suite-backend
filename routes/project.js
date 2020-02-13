@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 const auth = require('../middleware/auth');
-const { createProjectShcema } = require('../validators/project');
+const { createProjectSchema, deleteProjectSchema } = require('../validators/project');
 
 router.get('/', auth, (req, res) => {
   User.findOne({ uid: req.user.uid })
@@ -58,7 +58,7 @@ router.post('/', auth, (req, res) => {
   data.secretToken = jwt.sign(payload, process.env.JWT_KEY);
   data.createdAt = new Date().getTime();
 
-  const result = createProjectShcema.validate(data);
+  const result = createProjectSchema.validate(data);
   if (result.error) {
     return res.status(403).json({
       error: true,
@@ -131,9 +131,66 @@ router.put('/', (req, res) => {
   });
 });
 
-router.delete('/', (req, res) => {
-  return res.status(200).json({
-    msg: 'delete: /user/project',
+router.delete('/', auth, (req, res) => {
+  const result = deleteProjectSchema.validate(req.body);
+  if (result.error) {
+    return res.status(403).json({
+      error: true,
+      errorType: result.error.details[0].path[0],
+      errorMessage: result.error.details[0].message,
+    });
+  }
+
+  const projectToDelete = req.body.name;
+  User.findOne({ uid: req.user.uid }).then((dbUser) => {
+    if (!dbUser) {
+      return res.status(400).json({
+        error: true,
+        errorType: 'user',
+        errorMessage: 'User does not exist.',
+      });
+    }
+    let deletedProject = {};
+    for (let i = 0; i < dbUser.projects.length; i++) {
+      if (dbUser.projects[i].name === projectToDelete) {
+        deletedProject = dbUser.projects[i];
+        break;
+      }
+    }
+    User.findOneAndUpdate(
+      { uid: req.user.uid },
+      { $pull: { projects: { name: projectToDelete } } },
+      { new: true },
+    )
+      .then((afterUpdate) => {
+        if (!afterUpdate) {
+          return res.status(500).json({
+            error: true,
+            errorType: 'server',
+            errorMessage: err,
+          });
+        }
+
+        delete deletedProject.secretToken;
+
+        for (let i = 0; i < afterUpdate.projects.length; i++) {
+          delete afterUpdate.projects[i].secretToken;
+          delete afterUpdate.projects[i].requests;
+        }
+
+        return res.status(200).json({
+          err: false,
+          deletedProject,
+          updated: afterUpdate,
+        });
+      })
+      .catch((err) => {
+        return res.status(500).json({
+          error: true,
+          errorType: 'server',
+          errorMessage: err,
+        });
+      });
   });
 });
 

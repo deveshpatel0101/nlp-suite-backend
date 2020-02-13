@@ -1,6 +1,6 @@
 const Joi = require('@hapi/joi');
 
-module.exports.createProjectShcema = Joi.object({
+module.exports.createProjectSchema = Joi.object({
   name: Joi.string()
     .min(3)
     .required(),
@@ -18,4 +18,8 @@ module.exports.createProjectShcema = Joi.object({
   }),
   secretToken: Joi.string().required(),
   createdAt: Joi.date().required(),
+});
+
+module.exports.deleteProjectSchema = Joi.object({
+  name: Joi.string().required(),
 });

@@ -35,7 +35,6 @@ router.post('/', (req, res) => {
         });
       }
       bcrypt.compare(loginUser.password, result.password, (err, isPasswordCorrect) => {
-        console.log('came here', result);
         if (err) {
           return res.status(500).json({
             error: true,
