@@ -4,7 +4,6 @@ const cors = require('cors');
 const app = express();
 
 require('./db/mongoose')();
-require('./db/redis');
 const login = require('./routes/login');
 const project = require('./routes/project');
 const register = require('./routes/register');
