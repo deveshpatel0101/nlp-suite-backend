@@ -110,9 +110,11 @@ router.post('/', auth, (req, res) => {
           delete updated[i].secretToken;
         }
 
-        return res.status(400).json({
+        return res.status(200).json({
           error: false,
-          projects: updated,
+          results: {
+            projects: updated,
+          },
         });
       })
       .catch((err) => {
