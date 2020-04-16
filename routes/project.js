@@ -76,6 +76,14 @@ router.post('/', auth, (req, res) => {
       });
     }
 
+    if (dbUser.isVerified === false) {
+      return res.status(400).json({
+        error: true,
+        errorType: 'user',
+        errorMessage: 'Please verify your email first!',
+      });
+    }
+
     if (dbUser.accountType === 'free' && dbUser.projects.length === 3) {
       return res.status(400).json({
         error: true,
