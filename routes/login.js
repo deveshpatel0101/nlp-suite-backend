@@ -57,6 +57,10 @@ router.post('/', (req, res) => {
           expiresIn: '1h',
         });
 
+        for (let i = 0; i < result.projects.length; i++) {
+          delete result.projects[i].secretToken;
+        }
+
         return res.status(200).json({
           error: false,
           jwtToken,
