@@ -6,7 +6,13 @@ const uuid = require('uuid/v4');
 const User = require('../models/user.js');
 
 router.post('/', (req, res) => {
-  const regUser = { ...req.body, accountType: 'free', projects: [], uid: uuid() };
+  const regUser = {
+    ...req.body,
+    accountType: 'free',
+    isVerified: false,
+    projects: [],
+    uid: uuid(),
+  };
   const validate = registerUserSchema.validate(regUser);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {
@@ -43,7 +49,7 @@ router.post('/', (req, res) => {
       if (err) {
         return res.status(400).json({
           error: true,
-          errorType: 'unexpected',
+          errorType: 'server',
           errorMessage: err,
         });
       }
@@ -52,12 +58,13 @@ router.post('/', (req, res) => {
         if (err) {
           return res.status(500).json({
             error: true,
-            errorType: 'unexpected',
+            errorType: 'server',
             errorMessage: err,
           });
         }
 
         regUser.password = hash;
+
         new User(regUser)
           .save()
           .then(() => {
@@ -69,7 +76,7 @@ router.post('/', (req, res) => {
           .catch((err) => {
             return res.status(500).json({
               error: true,
-              errorType: 'unexpected',
+              errorType: 'server',
               errorMessage: err,
             });
           });

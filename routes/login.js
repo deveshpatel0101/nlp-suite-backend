@@ -67,6 +67,7 @@ router.post('/', (req, res) => {
           userData: {
             fname: result.fname,
             lname: result.lname,
+            isVerified: result.isVerified,
             accountType: result.accountType,
             projects: result.projects,
           },

@@ -10,6 +10,7 @@ const project = require('./routes/project');
 const register = require('./routes/register');
 const token = require('./routes/token');
 const usage = require('./routes/usage');
+const verify = require('./routes/verify');
 
 const entities = require('./routes/nlps/entities');
 const sentiment = require('./routes/nlps/sentiment');
@@ -30,6 +31,7 @@ app.use('/user/login', login);
 app.use('/user/profile', profile);
 app.use('/user/project', project);
 app.use('/user/register', register);
+app.use('/user/verify', verify);
 app.use('/project/token', token);
 app.use('/project/usage', usage);
 

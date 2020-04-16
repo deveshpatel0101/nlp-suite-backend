@@ -23,6 +23,10 @@ let UserSchema = new Schema({
     type: String,
     required: true,
   },
+  isVerified: {
+    type: Boolean,
+    required: true,
+  },
   accountType: {
     type: String,
     required: true,
