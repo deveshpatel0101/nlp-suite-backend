@@ -5,6 +5,7 @@ const app = express();
 
 require('./db/mongoose')();
 const login = require('./routes/login');
+const profile = require('./routes/profile');
 const project = require('./routes/project');
 const register = require('./routes/register');
 const token = require('./routes/token');
@@ -26,6 +27,7 @@ app.use(bodyParser.json());
 
 // routes
 app.use('/user/login', login);
+app.use('/user/profile', profile);
 app.use('/user/project', project);
 app.use('/user/register', register);
 app.use('/project/token', token);
