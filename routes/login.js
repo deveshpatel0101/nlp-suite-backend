@@ -59,16 +59,19 @@ router.post('/', (req, res) => {
 
         for (let i = 0; i < result.projects.length; i++) {
           delete result.projects[i].secretToken;
+          delete result.projects[i].requests;
         }
 
         return res.status(200).json({
           error: false,
           jwtToken,
-          userData: {
-            fname: result.fname,
-            lname: result.lname,
-            isVerified: result.isVerified,
-            accountType: result.accountType,
+          results: {
+            userData: {
+              fname: result.fname,
+              lname: result.lname,
+              isVerified: result.isVerified,
+              accountType: result.accountType,
+            },
             projects: result.projects,
           },
         });

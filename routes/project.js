@@ -16,11 +16,13 @@ router.get('/', auth, (req, res) => {
           errorMessage: 'User does not exist.',
         });
       }
+
       const projects = response.projects;
       for (let i = 0; i < projects.length; i++) {
         delete projects[i].secretToken;
         delete projects[i].requests;
       }
+
       return res.status(200).json({
         error: false,
         results: {
@@ -29,6 +31,7 @@ router.get('/', auth, (req, res) => {
             fname: response.fname,
             lname: response.lname,
             accountType: response.accountType,
+            isVerified: response.isVerified,
           },
         },
       });
