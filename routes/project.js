@@ -82,7 +82,7 @@ router.post('/', auth, (req, res) => {
     if (dbUser.isVerified === false) {
       return res.status(400).json({
         error: true,
-        errorType: 'user',
+        errorType: 'email',
         errorMessage: 'Please verify your email first!',
       });
     }

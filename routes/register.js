@@ -22,7 +22,7 @@ router.post('/', (req, res) => {
         errorMessage:
           'Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.',
       });
-    } else if (validate.error.details[0].path[0] === 'cpassword') {
+    } else if (validate.error.details[0].path[0] === 'confirmPassword') {
       return res.status(400).json({
         error: true,
         errorType: validate.error.details[0].path[0],

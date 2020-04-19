@@ -44,8 +44,8 @@ router.post('/', auth, (req, res) => {
       if (userData.isVerified) {
         return res.status(400).json({
           error: true,
-          errorType: 'user',
-          errorMessage: 'User is already verified.',
+          errorType: 'email',
+          errorMessage: 'Email is already verified.',
         });
       }
 

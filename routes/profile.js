@@ -17,7 +17,7 @@ router.patch('/', auth, (req, res) => {
         errorMessage:
           'Old Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.',
       });
-    } else if (validate.error.details[0].path[0] === 'cnewPassword') {
+    } else if (validate.error.details[0].path[0] === 'confirmNewPassword') {
       return res.status(400).json({
         error: true,
         errorType: validate.error.details[0].path[0],
@@ -60,7 +60,7 @@ router.patch('/', auth, (req, res) => {
         if (!isPasswordCorrect) {
           return res.status(400).json({
             error: true,
-            errorType: 'password',
+            errorType: 'oldPassword',
             errorMessage: 'Wrong password.',
           });
         }
