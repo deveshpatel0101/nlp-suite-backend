@@ -40,8 +40,6 @@ router.get('/', auth, (req, res) => {
         });
       }
 
-      // TODO: Fetch requests from redis and append it to the requests array.
-
       return res.status(200).json({
         error: false,
         results: {

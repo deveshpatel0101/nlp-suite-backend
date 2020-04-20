@@ -31,7 +31,7 @@ router.post('/', (req, res) => {
         return res.status(400).json({
           error: true,
           errorType: 'email',
-          errorMessage: 'User does not exist.',
+          errorMessage: 'Invalid email.',
         });
       }
       bcrypt.compare(loginUser.password, result.password, (err, isPasswordCorrect) => {
