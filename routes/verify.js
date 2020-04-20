@@ -57,6 +57,8 @@ router.post('/', auth, (req, res) => {
 
       sendMail({
         email: userData.email,
+        subject: 'Verify your email!',
+        text: 'This link will expire after 1 day. Please verify it.',
         link: `${process.env.BACKEND_DOMAIN}/user/verify?token=${token}`,
       });
 

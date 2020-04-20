@@ -12,10 +12,10 @@ const sendMail = (mailValues) => {
   let mailOptions = {
     from: 'mehacker369@gmail.com',
     to: mailValues.email,
-    subject: 'Verify your email',
-    text: `This link will expire after 1 day. Please verify it.\n${mailValues.link}`,
+    subject: mailValues.subject,
+    text: `${mailValues.subject}\n${mailValues.link}`,
     html: `<div>
-            <p>This link will expire after 1 day. Please verify it.</p>
+            <p>${mailValues.subject}</p>
             <a href=${mailValues.link} title='Email verification link'>${mailValues.link}</a>
           </div>`,
   };
