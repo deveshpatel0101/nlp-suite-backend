@@ -96,7 +96,7 @@ router.post('/', auth, async (req, res) => {
     }
   }
 
-  const updatedUserObject = await User.findOneAndUpdate(
+  let updatedUserObject = await User.findOneAndUpdate(
     { uid: dbUser.uid },
     { $push: { projects: data } },
     { new: true }
@@ -113,6 +113,7 @@ router.post('/', auth, async (req, res) => {
   updatedUserObject = [...updatedUserObject.projects];
   for (let i = 0; i < updatedUserObject.length; i++) {
     delete updatedUserObject[i].secretToken;
+    delete updatedUserObject[i].requests;
   }
 
   return res.status(200).json({

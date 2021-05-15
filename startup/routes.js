@@ -22,8 +22,8 @@ module.exports = (app) => {
   app.use(cors());
 
   // body parser
-  express.urlencoded({ extended: true });
-  express.json();
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
 
   // routes
   app.use('/user/login', login);

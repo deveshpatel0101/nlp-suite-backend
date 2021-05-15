@@ -1,6 +1,5 @@
 const router = require('express').Router();
 
-const User = require('../models/user');
 const auth = require('../middleware/auth');
 const { getTokenSchema } = require('../validators/token');
 
@@ -19,7 +18,7 @@ router.get('/', auth, async (req, res) => {
   const dbUser = req.dbUser;
 
   // find the secret token
-  let secretToken = undefined;
+  let secretToken;
   for (let i = 0; i < dbUser.projects.length; i++) {
     if (dbUser.projects[i].name === req.query.name) {
       secretToken = dbUser.projects[i].secretToken;

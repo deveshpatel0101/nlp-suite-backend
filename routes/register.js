@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
   }
 
   // check if user exists
-  const dbUser = await User.findOne({ email: loginUser.email });
+  const dbUser = await User.findOne({ email: regUser.email });
   if (dbUser) {
     return res.status(400).json({
       error: true,

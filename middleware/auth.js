@@ -32,10 +32,15 @@ module.exports = async (req, res, next) => {
   }
 
   // remove secret tokens and requests associated with each projects
-  for (let i = 0; i < dbUser.projects.length; i++) {
-    delete dbUser.projects[i].secretToken;
-    delete dbUser.projects[i].requests;
-  }
+  const isRequestToProjectsRoute = req.originalUrl
+    .toLowerCase()
+    .split('/')
+    .includes('project');
+  if (!isRequestToProjectRoute)
+    for (let i = 0; i < dbUser.projects.length; i++) {
+      delete dbUser.projects[i].secretToken;
+      delete dbUser.projects[i].requests;
+    }
 
   req.dbUser = dbUser;
   next();
