@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 module.exports = async (req, res, next) => {
   if (!req.get('Authorization')) {
@@ -21,5 +22,21 @@ module.exports = async (req, res, next) => {
   }
 
   req.user = decodedToken;
+  const dbUser = await User.findOne({ uid: decodedToken.uid });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
+    });
+  }
+
+  // remove secret tokens and requests associated with each projects
+  for (let i = 0; i < dbUser.projects.length; i++) {
+    delete dbUser.projects[i].secretToken;
+    delete dbUser.projects[i].requests;
+  }
+
+  req.dbUser = dbUser;
   next();
 };

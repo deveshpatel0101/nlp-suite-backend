@@ -10,7 +10,7 @@ const {
 } = require('../validators/project');
 
 router.get('/', auth, async (req, res) => {
-  const dbUser = await User.findOne({ uid: req.user.uid });
+  const dbUser = req.dbUser;
   if (!dbUser) {
     return res.status(400).json({
       error: true,
@@ -66,15 +66,8 @@ router.post('/', auth, async (req, res) => {
     });
   }
 
-  // check if user exists
-  const dbUser = await User.findOne({ uid: req.user.uid });
-  if (!dbUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
+  // get the user object from database as set by auth middleware on request
+  const dbUser = req.dbUser;
 
   if (dbUser.isVerified === false) {
     return res.status(400).json({
@@ -141,15 +134,8 @@ router.delete('/', auth, async (req, res) => {
     });
   }
 
-  // check if user exists
-  const dbUser = await User.findOne({ uid: req.user.uid });
-  if (!dbUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
+  // get the user object from database as set by auth middleware on request
+  const dbUser = req.dbUser;
 
   const projectToDelete = req.body.name;
 

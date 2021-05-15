@@ -42,15 +42,7 @@ router.patch('/', auth, async (req, res) => {
     });
   }
 
-  // check if user exists
-  const dbUser = await User.findOne({ uid: req.user.uid });
-  if (!dbUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
+  const dbUser = req.dbUser;
 
   // check the field to update
   const storeInDb = {};

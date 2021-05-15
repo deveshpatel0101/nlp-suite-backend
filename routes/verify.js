@@ -7,15 +7,10 @@ const sendMail = require('../controllers/mail');
 const auth = require('../middleware/auth');
 
 router.post('/', auth, async (req, res) => {
-  // check if user exists and if verified
-  const dbUser = await User.findOne({ uid: req.user.uid });
-  if (!dbUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
+  // get the user object from database as set by auth middleware on request
+  const dbUser = req.dbUser;
+
+  // check if user is verified
   if (dbUser.isVerified) {
     return res.status(400).json({
       error: true,
