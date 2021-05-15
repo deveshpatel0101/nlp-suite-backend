@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const logger = require('../startup/logging');
 
 module.exports = () => {
   let MONGODB_URL = process.env.MONGODB_URL;
@@ -10,9 +11,6 @@ module.exports = () => {
       useUnifiedTopology: true,
     })
     .then(() => {
-      console.log(`Connected to Database ${MONGODB_URL}...`);
-    })
-    .catch((err) => {
-      console.log(`Error while connecting to mongodb`, err);
+      logger.info(`Connected to mongodb database...`);
     });
 };

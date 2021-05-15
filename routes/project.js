@@ -4,50 +4,46 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 const auth = require('../middleware/auth');
-const { createProjectSchema, deleteProjectSchema } = require('../validators/project');
+const {
+  createProjectSchema,
+  deleteProjectSchema,
+} = require('../validators/project');
 
-router.get('/', auth, (req, res) => {
-  User.findOne({ uid: req.user.uid })
-    .then((response) => {
-      if (!response) {
-        return res.status(400).json({
-          error: true,
-          errorType: 'user',
-          errorMessage: 'User does not exist.',
-        });
-      }
-
-      const projects = response.projects;
-      for (let i = 0; i < projects.length; i++) {
-        delete projects[i].secretToken;
-        delete projects[i].requests;
-      }
-
-      return res.status(200).json({
-        error: false,
-        results: {
-          projects,
-          userData: {
-            fname: response.fname,
-            lname: response.lname,
-            accountType: response.accountType,
-            isVerified: response.isVerified,
-          },
-        },
-      });
-    })
-    .catch((err) => {
-      return res.status(500).json({
-        error: true,
-        errorType: 'server',
-        errorMessage: err,
-      });
+router.get('/', auth, async (req, res) => {
+  const dbUser = await User.findOne({ uid: req.user.uid });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
     });
+  }
+
+  const projects = dbUser.projects;
+  for (let i = 0; i < projects.length; i++) {
+    delete projects[i].secretToken;
+    delete projects[i].requests;
+  }
+
+  return res.status(200).json({
+    error: false,
+    results: {
+      projects,
+      userData: {
+        fname: dbUser.fname,
+        lname: dbUser.lname,
+        accountType: dbUser.accountType,
+        isVerified: dbUser.isVerified,
+      },
+    },
+  });
 });
 
-router.post('/', auth, (req, res) => {
+router.post('/', auth, async (req, res) => {
+  // get request data from body
   const data = req.body;
   data.requests = {};
+
   // initialize empty requests array for each allowed apis
   for (let i = 0; i < data.allowedApis.length; i++) {
     data.requests[data.allowedApis[i]] = [];
@@ -70,81 +66,72 @@ router.post('/', auth, (req, res) => {
     });
   }
 
-  User.findOne({ uid: req.user.uid }).then((dbUser) => {
-    if (!dbUser) {
+  // check if user exists
+  const dbUser = await User.findOne({ uid: req.user.uid });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
+    });
+  }
+
+  if (dbUser.isVerified === false) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'email',
+      errorMessage: 'Please verify your email first!',
+    });
+  }
+
+  if (dbUser.accountType === 'free' && dbUser.projects.length === 3) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'projects',
+      errorMessage:
+        'You have reached maximum limit of projects you can create. Subscribe to premium and create unlimited projects.',
+    });
+  }
+
+  for (let i = 0; i < dbUser.projects.length; i++) {
+    if (data.name === dbUser.projects[i].name) {
       return res.status(400).json({
         error: true,
-        errorType: 'user',
-        errorMessage: 'User does not exist.',
+        errorType: 'name',
+        errorMessage: 'Application with the similar name already exist.',
       });
     }
+  }
 
-    if (dbUser.isVerified === false) {
-      return res.status(400).json({
-        error: true,
-        errorType: 'email',
-        errorMessage: 'Please verify your email first!',
-      });
-    }
+  const updatedUserObject = await User.findOneAndUpdate(
+    { uid: dbUser.uid },
+    { $push: { projects: data } },
+    { new: true }
+  );
 
-    if (dbUser.accountType === 'free' && dbUser.projects.length === 3) {
-      return res.status(400).json({
-        error: true,
-        errorType: 'projects',
-        errorMessage:
-          'You have reached maximum limit of projects you can create. Subscribe to premium and create unlimited projects.',
-      });
-    }
+  if (!updatedUserObject) {
+    return res.status(500).json({
+      error: true,
+      errorType: 'server',
+      errorMessage: 'Something went wrong from our side.',
+    });
+  }
 
-    for (let i = 0; i < dbUser.projects.length; i++) {
-      if (data.name === dbUser.projects[i].name) {
-        return res.status(400).json({
-          error: true,
-          errorType: 'name',
-          errorMessage: 'Application with the similar name already exist.',
-        });
-      }
-    }
+  updatedUserObject = [...updatedUserObject.projects];
+  for (let i = 0; i < updatedUserObject.length; i++) {
+    delete updatedUserObject[i].secretToken;
+  }
 
-    User.findOneAndUpdate({ uid: dbUser.uid }, { $push: { projects: data } }, { new: true })
-      .then((updated) => {
-        if (!updated) {
-          return res.status(500).json({
-            error: true,
-            errorType: 'server',
-            errorMessage: 'Something went wrong from our side.',
-          });
-        }
-
-        updated = [...updated.projects];
-        for (let i = 0; i < updated.length; i++) {
-          delete updated[i].secretToken;
-        }
-
-        return res.status(200).json({
-          error: false,
-          results: {
-            projects: updated,
-          },
-        });
-      })
-      .catch((err) => {
-        return res.status(500).json({
-          error: true,
-          errorType: 'server',
-          errorMessage: err,
-        });
-      });
-  });
-});
-
-router.put('/', (req, res) => {
   return res.status(200).json({
-    msg: 'put: /user/project',
+    error: false,
+    results: {
+      projects: updatedUserObject,
+    },
   });
 });
 
-router.delete('/', auth, (req, res) => {
+router.delete('/', auth, async (req, res) => {
+  // get request data from body and validate it
   const result = deleteProjectSchema.validate(req.body);
   if (result.error) {
     return res.status(403).json({
@@ -154,56 +141,54 @@ router.delete('/', auth, (req, res) => {
     });
   }
 
+  // check if user exists
+  const dbUser = await User.findOne({ uid: req.user.uid });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
+    });
+  }
+
   const projectToDelete = req.body.name;
-  User.findOne({ uid: req.user.uid }).then((dbUser) => {
-    if (!dbUser) {
-      return res.status(400).json({
-        error: true,
-        errorType: 'user',
-        errorMessage: 'User does not exist.',
-      });
+
+  // store the project that needs to be deleted
+  let deletedProject = {};
+  for (let i = 0; i < dbUser.projects.length; i++) {
+    if (dbUser.projects[i].name === projectToDelete) {
+      deletedProject = dbUser.projects[i];
+      break;
     }
-    let deletedProject = {};
-    for (let i = 0; i < dbUser.projects.length; i++) {
-      if (dbUser.projects[i].name === projectToDelete) {
-        deletedProject = dbUser.projects[i];
-        break;
-      }
-    }
-    User.findOneAndUpdate(
-      { uid: req.user.uid },
-      { $pull: { projects: { name: projectToDelete } } },
-      { new: true },
-    )
-      .then((afterUpdate) => {
-        if (!afterUpdate) {
-          return res.status(500).json({
-            error: true,
-            errorType: 'server',
-            errorMessage: err,
-          });
-        }
+  }
 
-        delete deletedProject.secretToken;
+  // update the database
+  const updatedUserObject = await User.findOneAndUpdate(
+    { uid: req.user.uid },
+    { $pull: { projects: { name: projectToDelete } } },
+    { new: true }
+  );
+  if (!updatedUserObject) {
+    return res.status(500).json({
+      error: true,
+      errorType: 'server',
+      errorMessage: err,
+    });
+  }
 
-        for (let i = 0; i < afterUpdate.projects.length; i++) {
-          delete afterUpdate.projects[i].secretToken;
-          delete afterUpdate.projects[i].requests;
-        }
+  // delete the secret token and requests from deletedProject and existing projects
+  delete deletedProject.secretToken;
+  delete deletedProject.requests;
+  for (let i = 0; i < updatedUserObject.projects.length; i++) {
+    delete updatedUserObject.projects[i].secretToken;
+    delete updatedUserObject.projects[i].requests;
+  }
 
-        return res.status(200).json({
-          err: false,
-          deletedProject,
-          updated: afterUpdate,
-        });
-      })
-      .catch((err) => {
-        return res.status(500).json({
-          error: true,
-          errorType: 'server',
-          errorMessage: err,
-        });
-      });
+  // return successful message
+  return res.status(200).json({
+    err: false,
+    deletedProject,
+    updated: updatedUserObject,
   });
 });
 

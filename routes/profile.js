@@ -5,8 +5,11 @@ const User = require('../models/user');
 const auth = require('../middleware/auth');
 const { updateProfileSchema } = require('../validators/profile');
 
-router.patch('/', auth, (req, res) => {
+router.patch('/', auth, async (req, res) => {
+  // get data from request body
   const toUpdate = req.body;
+
+  // validate request data
   const validate = updateProfileSchema.validate(toUpdate);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'oldPassword') {
@@ -28,7 +31,10 @@ router.patch('/', auth, (req, res) => {
       errorType: validate.error.details[0].path[0],
       errorMessage: validate.error.details[0].message,
     });
-  } else if (toUpdate.oldPassword && toUpdate.oldPassword === toUpdate.newPassword) {
+  } else if (
+    toUpdate.oldPassword &&
+    toUpdate.oldPassword === toUpdate.newPassword
+  ) {
     return res.status(400).json({
       error: true,
       errorType: 'newPassword',
@@ -36,59 +42,64 @@ router.patch('/', auth, (req, res) => {
     });
   }
 
-  User.findOne({ uid: req.user.uid })
-    .then((userData) => {
-      if (!userData) {
-        return res.status(400).json({
-          error: true,
-          errorType: 'user',
-          errorMessage: 'User does not exist.',
-        });
-      }
-
-      const storeInDb = {};
-      if (toUpdate.fname) {
-        storeInDb.fname = toUpdate.fname;
-      }
-      if (toUpdate.lname) {
-        storeInDb.lname = toUpdate.lname;
-      }
-
-      if (toUpdate.oldPassword) {
-        const isPasswordCorrect = bcrypt.compareSync(toUpdate.oldPassword, userData.password);
-        if (!isPasswordCorrect) {
-          return res.status(400).json({
-            error: true,
-            errorType: 'oldPassword',
-            errorMessage: 'Wrong password.',
-          });
-        }
-        const newHashPassword = bcrypt.hashSync(toUpdate.newPassword, bcrypt.genSaltSync(10));
-        storeInDb.password = newHashPassword;
-      }
-      User.findOneAndUpdate({ uid: req.user.uid }, { ...storeInDb }, { new: true }).then(
-        (updated) => {
-          if (!updated) {
-            return res.status(400).json({
-              error: true,
-              errorType: 'user',
-              errorMessage: 'User does not exist.',
-            });
-          }
-          return res.status(200).json({
-            error: false,
-            successMessage: 'Profile updated successfully.',
-          });
-        },
-      );
-    })
-    .catch((err) => {
-      return res.status(500).json({
-        error: true,
-        errorType: 'server',
-        errorMessage: err,
-      });
+  // check if user exists
+  const dbUser = await User.findOne({ uid: req.user.uid });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
     });
+  }
+
+  // check the field to update
+  const storeInDb = {};
+  if (toUpdate.fname) {
+    storeInDb.fname = toUpdate.fname;
+  }
+  if (toUpdate.lname) {
+    storeInDb.lname = toUpdate.lname;
+  }
+  if (toUpdate.oldPassword) {
+    // validate the old password
+    const isPasswordCorrect = bcrypt.compareSync(
+      toUpdate.oldPassword,
+      dbUser.password
+    );
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        error: true,
+        errorType: 'oldPassword',
+        errorMessage: 'Wrong password.',
+      });
+    }
+
+    const newHashPassword = bcrypt.hashSync(
+      toUpdate.newPassword,
+      bcrypt.genSaltSync(10)
+    );
+    storeInDb.password = newHashPassword;
+  }
+
+  // update the user data
+  const newUser = await User.findOneAndUpdate(
+    { uid: req.user.uid },
+    { ...storeInDb },
+    { new: true }
+  );
+  if (!newUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'user',
+      errorMessage: 'User does not exist.',
+    });
+  }
+
+  // return successful message
+  return res.status(200).json({
+    error: false,
+    successMessage: 'Profile updated successfully.',
+  });
 });
 
 module.exports = router;

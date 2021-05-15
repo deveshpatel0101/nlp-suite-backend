@@ -6,8 +6,11 @@ const bcrypt = require('bcryptjs');
 const { loginUserSchema } = require('../validators/login');
 const User = require('../models/user');
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
+  // get request data
   const loginUser = req.body;
+
+  // validate the data
   const validate = loginUserSchema.validate(loginUser);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {
@@ -25,65 +28,58 @@ router.post('/', (req, res) => {
     });
   }
 
-  User.findOne({ email: loginUser.email })
-    .then((result) => {
-      if (!result) {
-        return res.status(400).json({
-          error: true,
-          errorType: 'email',
-          errorMessage: 'Invalid email.',
-        });
-      }
-      bcrypt.compare(loginUser.password, result.password, (err, isPasswordCorrect) => {
-        if (err) {
-          return res.status(500).json({
-            error: true,
-            errorType: 'unexpected',
-            errorMessage: err,
-          });
-        } else if (!isPasswordCorrect) {
-          return res.status(400).json({
-            error: true,
-            errorType: 'password',
-            errorMessage: 'Wrong password.',
-          });
-        }
-
-        const jwtPayload = {
-          uid: result.uid,
-          rid: uuid(),
-        };
-        const jwtToken = jwt.sign(jwtPayload, process.env.JWT_KEY, {
-          expiresIn: '1h',
-        });
-
-        for (let i = 0; i < result.projects.length; i++) {
-          delete result.projects[i].secretToken;
-          delete result.projects[i].requests;
-        }
-
-        return res.status(200).json({
-          error: false,
-          jwtToken,
-          results: {
-            userData: {
-              fname: result.fname,
-              lname: result.lname,
-              isVerified: result.isVerified,
-              accountType: result.accountType,
-            },
-            projects: result.projects,
-          },
-        });
-      });
-    })
-    .catch((err) => {
-      return res.status(500).json({
-        error: true,
-        errorType: 'unexpected',
-        errorMessage: err,
-      });
+  // check if user exists
+  const dbUser = await User.findOne({ email: loginUser.email });
+  if (!dbUser) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'email',
+      errorMessage: 'Invalid email.',
     });
+  }
+
+  // check if password is correct
+  const isPasswordCorrect = bcrypt.compareSync(
+    loginUser.password,
+    dbUser.password
+  );
+  if (!isPasswordCorrect) {
+    return res.status(400).json({
+      error: true,
+      errorType: 'password',
+      errorMessage: 'Invalid password.',
+    });
+  }
+
+  // sign a jwt token
+  const jwtPayload = {
+    uid: dbUser.uid,
+    rid: uuid(),
+  };
+  const jwtToken = jwt.sign(jwtPayload, process.env.JWT_KEY, {
+    expiresIn: '1d',
+  });
+
+  // remove secret tokens and requests associated with each projects
+  for (let i = 0; i < dbUser.projects.length; i++) {
+    delete dbUser.projects[i].secretToken;
+    delete dbUser.projects[i].requests;
+  }
+
+  // return successful data
+  return res.status(200).json({
+    error: false,
+    jwtToken,
+    results: {
+      userData: {
+        fname: dbUser.fname,
+        lname: dbUser.lname,
+        isVerified: dbUser.isVerified,
+        accountType: dbUser.accountType,
+      },
+      projects: dbUser.projects,
+    },
+  });
 });
 
 module.exports = router;
