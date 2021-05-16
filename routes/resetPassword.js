@@ -78,14 +78,7 @@ router.patch('/', async (req, res) => {
       return res.status(400).json({
         error: true,
         errorType: validate.error.details[0].path[0],
-        errorMessage:
-          'Old Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.',
-      });
-    } else if (validate.error.details[0].path[0] === 'confirmPassword') {
-      return res.status(400).json({
-        error: true,
-        errorType: validate.error.details[0].path[0],
-        errorMessage: 'Both passwords should match.',
+        errorMessage: 'Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.'
       });
     }
     return res.status(400).json({
