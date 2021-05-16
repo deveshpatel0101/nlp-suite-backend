@@ -59,6 +59,14 @@ router.post('/', auth, async (req, res) => {
 
   const result = createProjectSchema.validate(data);
   if (result.error) {
+    if (result.error.details[0].path[0] === 'name') {
+      return res.status(403).json({
+        error: true,
+        errorType: result.error.details[0].path[0],
+        errorMessage:
+          'Project name should have at least 3 characters, a lowercase letter and may contain numbers, hyphens or underscores. Uppercase letters are not allowed.',
+      });
+    }
     return res.status(403).json({
       error: true,
       errorType: result.error.details[0].path[0],
