@@ -1,32 +1,30 @@
-const nodemailer = require('nodemailer');
+const sendgridMail = require('@sendgrid/mail');
+const logger = require('../startup/logging');
 
-const sendMail = (mailValues) => {
-  let mail = nodemailer.createTransport({
-    service: 'SendGrid',
-    auth: {
-      user: process.env.SENDGRID_USERNAME,
-      pass: process.env.SENDGRID_PASSWORD,
-    },
-  });
+const sendMail = async (mailValues) => {
+  sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  let mailOptions = {
+  const message = {
     from: 'mehacker369@gmail.com',
     to: mailValues.email,
     subject: mailValues.subject,
-    text: `${mailValues.subject}\n${mailValues.link}`,
-    html: `<div>
-            <p>${mailValues.subject}</p>
-            <a href=${mailValues.link} title='Email verification link'>${mailValues.link}</a>
-          </div>`,
+    html: mailValues.html,
   };
 
-  mail.sendMail(mailOptions, function (err) {
-    if (err) {
-      console.log('something went wrong while sending mail to admin', err);
-    } else {
-      console.log('mail sent successfully');
+  try {
+    logger.info(`Sending email with values:`, message);
+    const response = await sendgridMail.send(message);
+    logger.info(`Received email response:`, response);
+
+    if (!(response[0].statusCode >= 200 && response[0].statusCode <= 299)) {
+      throw new Error(
+        `Failed to send email. Received response with status code: ${response[0].statusCode}`
+      );
     }
-  });
+  } catch (ex) {
+    logger.info(`Failed to send email. ${ex.message}`, ex);
+    throw ex;
+  }
 };
 
 module.exports = sendMail;

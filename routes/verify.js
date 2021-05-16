@@ -5,6 +5,7 @@ const uuid = require('uuid/v4');
 const User = require('../models/user.js');
 const sendMail = require('../controllers/mail');
 const auth = require('../middleware/auth');
+const logger = require('../startup/logging.js');
 
 router.post('/', auth, async (req, res) => {
   // get the user object from database as set by auth middleware on request
@@ -27,17 +28,23 @@ router.post('/', auth, async (req, res) => {
   const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn: '1h' });
 
   // send an email with verification link
-  sendMail({
-    email: dbUser.email,
-    subject: 'Verify your email!',
-    text: 'This link will expire in 1 hour. Please verify it.',
-    link: `${process.env.FRONTEND_DOMAIN}/user/verify?token=${token}`,
-  });
+  try {
+    await sendMail({
+      email: dbUser.email,
+      subject: 'Verify your email!',
+      html: `Please use the following link to verify your email within 1 hour before it expires. <a href="${process.env.FRONTEND_DOMAIN}/user/verify?token=${token}" title="Email verification link">${process.env.FRONTEND_DOMAIN}/user/verify?token=${token}</a>`,
+    });
+  } catch (ex) {
+    logger.error(
+      `Failed to send email verification link to ${dbUser.email}.`,
+      ex
+    );
+  }
 
   // return successful message
   return res.status(200).json({
     error: false,
-    successMessage: 'Email sent successfully. Check your inbox!',
+    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again.`,
   });
 });
 

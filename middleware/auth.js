@@ -32,7 +32,7 @@ module.exports = async (req, res, next) => {
   }
 
   // remove secret tokens and requests associated with each projects
-  const isRequestToProjectsRoute = req.originalUrl
+  const isRequestToProjectRoute = req.originalUrl
     .toLowerCase()
     .split('/')
     .includes('project');

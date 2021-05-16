@@ -4,7 +4,7 @@ const RateLimit = require('../models/rateLimit');
 const User = require('../models/user');
 
 module.exports = async (uid, pid, requestType) => {
-  const REQUESTS_LIMIT = 10;
+  const REQUESTS_LIMIT = 100;
   let userRate = await RateLimit.findOne({ uid, pid });
   if (!userRate) {
     userRate = insertIntoRateLimitDb(uid, pid);

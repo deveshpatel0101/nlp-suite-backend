@@ -9,6 +9,7 @@ const {
   resetPasswordLinkSchema,
   resetPasswordSchema,
 } = require('../validators/resetPassword');
+const logger = require('../startup/logging.js');
 
 router.post('/', async (req, res) => {
   // get the request body and validate the data
@@ -32,21 +33,24 @@ router.post('/', async (req, res) => {
   }
 
   const payload = {
-    uid: userData.uid,
+    uid: dbUser.uid,
     rid: uuid(),
   };
   const token = jwt.sign(payload, process.env.JWT_KEY, { expiresIn: '1h' });
 
-  sendMail({
-    email: userData.email,
-    subject: 'Reset password!',
-    text: 'You requested to reset your password. Reset it using the following link.',
-    link: `${process.env.FRONTEND_DOMAIN}/user/resetPassword?token=${token}`,
-  });
+  try {
+    await sendMail({
+      email: dbUser.email,
+      subject: 'Reset password!',
+      html: `<p>Please use the following link to reset your password. It will expire in 1 hour.</p><a href="${process.env.FRONTEND_DOMAIN}/user/resetPassword?token=${token}" title="Email verification link">${process.env.FRONTEND_DOMAIN}/user/resetPassword?token=${token}</a>`,
+    });
+  } catch (ex) {
+    logger.error(`Failed to send email to ${dbUser.email} for password reset`);
+  }
 
   return res.status(200).json({
     error: false,
-    successMessage: 'Email sent successfully. Check your inbox!',
+    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again.`,
   });
 });
 
@@ -62,8 +66,7 @@ router.patch('/', async (req, res) => {
     return res.status(400).json({
       error: true,
       errorType: 'token',
-      errorMessage:
-        'Invalid token or broken link. Email verification failed. Please login into your account and resend a new verification link.',
+      errorMessage: 'Invalid token or broken link. Password reset failed',
     });
   }
 
@@ -124,7 +127,7 @@ router.patch('/', async (req, res) => {
 
   // update the password in db
   const updatedUserObject = await User.findOneAndUpdate(
-    { uid: decoded.uid },
+    { uid: decodedToken.uid },
     { password: toUpdate.password },
     { new: true }
   );

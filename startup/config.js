@@ -5,11 +5,8 @@ module.exports = () => {
   if (!process.env.JWT_KEY) {
     throw new Error('Required Environment variable: JWT_KEY');
   }
-  if (!process.env.SENDGRID_USERNAME) {
+  if (!process.env.SENDGRID_API_KEY) {
     throw new Error('Required Environment variable: SENDGRID_USERNAME');
-  }
-  if (!process.env.SENDGRID_PASSWORD) {
-    throw new Error('Required Environment variable: SENDGRID_PASSWORD');
   }
   if (!process.env.FRONTEND_DOMAIN) {
     throw new Error('Required Environment variable: FRONTEND_DOMAIN');
