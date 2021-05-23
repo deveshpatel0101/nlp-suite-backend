@@ -13,9 +13,4 @@ module.exports.updateProfileSchema = Joi.object({
         .required(),
       otherwise: Joi.string().regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?!.*\s).{4,}$/),
     }),
-  confirmNewPassword: Joi.equal(Joi.ref('newPassword')).when('oldPassword', {
-    is: Joi.exist(),
-    then: Joi.equal(Joi.ref('newPassword')).required(),
-    otherwise: Joi.equal(Joi.ref('newPassword')),
-  }),
 });

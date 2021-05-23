@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const uuid = require('uuid/v4');
 const jwt = require('jsonwebtoken');
+const moment = require('moment');
 
 const User = require('../models/user');
 const auth = require('../middleware/auth');
@@ -11,13 +12,6 @@ const {
 
 router.get('/', auth, async (req, res) => {
   const dbUser = req.dbUser;
-  if (!dbUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
 
   const projects = dbUser.projects;
   for (let i = 0; i < projects.length; i++) {
@@ -28,12 +22,12 @@ router.get('/', auth, async (req, res) => {
   return res.status(200).json({
     error: false,
     results: {
-      projects,
       userData: {
         fname: dbUser.fname,
         lname: dbUser.lname,
         accountType: dbUser.accountType,
         isVerified: dbUser.isVerified,
+        projects,
       },
     },
   });
@@ -55,19 +49,19 @@ router.post('/', auth, async (req, res) => {
     pid: data.pid,
   };
   data.secretToken = jwt.sign(payload, process.env.JWT_KEY);
-  data.createdAt = new Date().getTime();
+  data.createdAt = moment().unix();
 
   const result = createProjectSchema.validate(data);
   if (result.error) {
     if (result.error.details[0].path[0] === 'name') {
-      return res.status(403).json({
+      return res.status(422).json({
         error: true,
         errorType: result.error.details[0].path[0],
         errorMessage:
           'Project name should have at least 3 characters, a lowercase letter and may contain numbers, hyphens or underscores. Uppercase letters are not allowed.',
       });
     }
-    return res.status(403).json({
+    return res.status(422).json({
       error: true,
       errorType: result.error.details[0].path[0],
       errorMessage: result.error.details[0].message,
@@ -78,7 +72,7 @@ router.post('/', auth, async (req, res) => {
   const dbUser = req.dbUser;
 
   if (dbUser.isVerified === false) {
-    return res.status(400).json({
+    return res.status(403).json({
       error: true,
       errorType: 'email',
       errorMessage: 'Please verify your email first!',
@@ -86,7 +80,7 @@ router.post('/', auth, async (req, res) => {
   }
 
   if (dbUser.accountType === 'free' && dbUser.projects.length === 3) {
-    return res.status(400).json({
+    return res.status(403).json({
       error: true,
       errorType: 'projects',
       errorMessage:
@@ -96,10 +90,10 @@ router.post('/', auth, async (req, res) => {
 
   for (let i = 0; i < dbUser.projects.length; i++) {
     if (data.name === dbUser.projects[i].name) {
-      return res.status(400).json({
+      return res.status(422).json({
         error: true,
         errorType: 'name',
-        errorMessage: 'Application with the similar name already exist.',
+        errorMessage: 'Project with the similar name already exist.',
       });
     }
   }
@@ -110,14 +104,8 @@ router.post('/', auth, async (req, res) => {
     { new: true }
   );
 
-  if (!updatedUserObject) {
-    return res.status(500).json({
-      error: true,
-      errorType: 'server',
-      errorMessage: 'Something went wrong from our side.',
-    });
-  }
-
+  delete data.secretToken;
+  delete data.requests;
   updatedUserObject = [...updatedUserObject.projects];
   for (let i = 0; i < updatedUserObject.length; i++) {
     delete updatedUserObject[i].secretToken;
@@ -128,6 +116,7 @@ router.post('/', auth, async (req, res) => {
     error: false,
     results: {
       projects: updatedUserObject,
+      addedProject: data,
     },
   });
 });
@@ -136,7 +125,7 @@ router.delete('/', auth, async (req, res) => {
   // get request data from body and validate it
   const result = deleteProjectSchema.validate(req.body);
   if (result.error) {
-    return res.status(403).json({
+    return res.status(422).json({
       error: true,
       errorType: result.error.details[0].path[0],
       errorMessage: result.error.details[0].message,
@@ -149,12 +138,22 @@ router.delete('/', auth, async (req, res) => {
   const projectToDelete = req.body.name;
 
   // store the project that needs to be deleted
-  let deletedProject = {};
+  let removedProject = {};
+  let isProjectFound = false;
   for (let i = 0; i < dbUser.projects.length; i++) {
     if (dbUser.projects[i].name === projectToDelete) {
-      deletedProject = dbUser.projects[i];
+      removedProject = dbUser.projects[i];
+      isProjectFound = true;
       break;
     }
+  }
+
+  if(!isProjectFound) {
+    return res.status(422).json({
+      error: true,
+      errorType: 'name',
+      errorMessage: `Project named "${projectToDelete}" not found.`,
+    });
   }
 
   // update the database
@@ -163,17 +162,10 @@ router.delete('/', auth, async (req, res) => {
     { $pull: { projects: { name: projectToDelete } } },
     { new: true }
   );
-  if (!updatedUserObject) {
-    return res.status(500).json({
-      error: true,
-      errorType: 'server',
-      errorMessage: err,
-    });
-  }
 
   // delete the secret token and requests from deletedProject and existing projects
-  delete deletedProject.secretToken;
-  delete deletedProject.requests;
+  delete removedProject.secretToken;
+  delete removedProject.requests;
   for (let i = 0; i < updatedUserObject.projects.length; i++) {
     delete updatedUserObject.projects[i].secretToken;
     delete updatedUserObject.projects[i].requests;
@@ -181,9 +173,9 @@ router.delete('/', auth, async (req, res) => {
 
   // return successful message
   return res.status(200).json({
-    err: false,
-    deletedProject,
-    updated: updatedUserObject,
+    error: false,
+    removedProject,
+    projects: updatedUserObject,
   });
 });
 

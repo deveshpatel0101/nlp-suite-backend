@@ -19,14 +19,14 @@ router.post('/', async (req, res) => {
   const validate = registerUserSchema.validate(regUser);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {
-      return res.status(400).json({
+      return res.status(422).json({
         error: true,
         errorType: validate.error.details[0].path[0],
         errorMessage:
           'Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.',
       });
     }
-    return res.status(400).json({
+    return res.status(422).json({
       error: true,
       errorType: validate.error.details[0].path[0],
       errorMessage: validate.error.details[0].message,
@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
   // check if user exists
   const dbUser = await User.findOne({ email: regUser.email });
   if (dbUser) {
-    return res.status(400).json({
+    return res.status(409).json({
       error: true,
       errorType: 'user',
       errorMessage: 'User already exists.',
@@ -48,14 +48,7 @@ router.post('/', async (req, res) => {
   regUser.password = bcrypt.hashSync(regUser.password, salt);
 
   // save the user
-  const newUser = await new User(regUser).save();
-  if (!newUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'server',
-      errorMessage: 'Unable to create a new user.',
-    });
-  }
+  await new User(regUser).save();
 
   return res.status(200).json({
     error: false,

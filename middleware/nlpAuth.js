@@ -28,7 +28,7 @@ module.exports = async (req, res, next) => {
 
   const dbUser = await User.findOne({ uid: req.user.uid });
   if (!dbUser) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: true,
       errorType: 'user',
       errorMessage: 'User does not exist.',
@@ -43,13 +43,13 @@ module.exports = async (req, res, next) => {
   req.dbUser = dbUser;
 
   // check if project associated with token exists and the requested method is allowed
-  let isMethodAllowed = 0;
+  let isMethodAllowed = false;
   for (let project = 0; project < dbUser.projects.length; project++) {
     if (
       dbUser.projects[project].pid === req.user.pid &&
       dbUser.projects[project].allowedApis.includes(requestType)
     ) {
-      isMethodAllowed = 1;
+      isMethodAllowed = true;
       break;
     }
   }
@@ -57,7 +57,8 @@ module.exports = async (req, res, next) => {
     return res.status(403).json({
       error: true,
       errorType: 'token',
-      errorMessage: 'Invalid secret token...',
+      errorMessage:
+        'Either the token is invalid or the method is not allowed on the token.',
     });
   }
 
@@ -69,19 +70,19 @@ module.exports = async (req, res, next) => {
       requestType
     );
   } catch (ex) {
-    return res.status(400).json({
+    return res.status(500).json({
       error: true,
-      errorType: 'rateLimit',
+      errorType: 'server',
       errorMessage: ex,
     });
   }
 
   if (!userLimit?.shouldProceedRequest) {
-    return res.status(400).json({
+    return res.status(429).json({
       error: true,
       errorType: 'rateLimit',
       errorMessage:
-        'You have exceeded the limit of 100 requests per day. This limit resets everyday.',
+        'You have exceeded the limit of 100 requests per day. Subscribe to premium account or try again the next day. This limit resets everyday.',
     });
   }
 

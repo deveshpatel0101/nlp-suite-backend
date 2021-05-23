@@ -13,7 +13,7 @@ router.post('/', auth, async (req, res) => {
 
   // check if user is verified
   if (dbUser.isVerified) {
-    return res.status(400).json({
+    return res.status(403).json({
       error: true,
       errorType: 'email',
       errorMessage: 'Email is already verified.',
@@ -44,7 +44,7 @@ router.post('/', auth, async (req, res) => {
   // return successful message
   return res.status(200).json({
     error: false,
-    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again.`,
+    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again later.`,
   });
 });
 
@@ -71,18 +71,26 @@ router.patch('/', async (req, res) => {
     { isVerified: true },
     { new: true }
   );
-  if (!newUser) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
+
+  // delete secret tokens and requests from projects array
+  for (let i = 0; i < newUser.projects.length; i++) {
+    delete newUser.projects[i].secretToken;
+    delete newUser.projects[i].requests;
   }
 
   // return successful message
   return res.status(200).json({
     error: false,
     successMessage: 'Email verified successfully.',
+    results: {
+      userData: {
+        fname: dbUser.fname,
+        lname: dbUser.lname,
+        isVerified: dbUser.isVerified,
+        accountType: dbUser.accountType,
+        projects: dbUser.projects,
+      },
+    },
   });
 });
 

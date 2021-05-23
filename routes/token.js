@@ -7,7 +7,7 @@ router.get('/', auth, async (req, res) => {
   // get the project name from query string
   const result = getTokenSchema.validate({ name: req.query.name });
   if (result.error) {
-    return res.status(403).json({
+    return res.status(422).json({
       error: true,
       errorType: result.error.details[0].path[0],
       errorMessage: result.error.details[0].message,
@@ -27,7 +27,7 @@ router.get('/', auth, async (req, res) => {
   }
 
   if (!secretToken) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: true,
       errorType: 'project',
       errorMessage: `Project with ${req.query.name} name not found.`,

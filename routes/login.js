@@ -14,14 +14,13 @@ router.post('/', async (req, res) => {
   const validate = loginUserSchema.validate(loginUser);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {
-      return res.status(403).json({
+      return res.status(422).json({
         error: true,
         errorType: validate.error.details[0].path[0],
-        errorMessage:
-          'Password is required and should be at least 6 characters long and should include at least one uppercase letter and a numeric character.',
+        errorMessage: 'Invalid Password.',
       });
     }
-    return res.status(403).json({
+    return res.status(422).json({
       error: true,
       errorType: validate.error.details[0].path[0],
       errorMessage: validate.error.details[0].message,
@@ -31,7 +30,7 @@ router.post('/', async (req, res) => {
   // check if user exists
   const dbUser = await User.findOne({ email: loginUser.email });
   if (!dbUser) {
-    return res.status(400).json({
+    return res.status(401).json({
       error: true,
       errorType: 'email',
       errorMessage: 'Invalid email.',
@@ -44,7 +43,7 @@ router.post('/', async (req, res) => {
     dbUser.password
   );
   if (!isPasswordCorrect) {
-    return res.status(400).json({
+    return res.status(401).json({
       error: true,
       errorType: 'password',
       errorMessage: 'Invalid password.',
@@ -76,8 +75,8 @@ router.post('/', async (req, res) => {
         lname: dbUser.lname,
         isVerified: dbUser.isVerified,
         accountType: dbUser.accountType,
+        projects: dbUser.projects,
       },
-      projects: dbUser.projects,
     },
   });
 });

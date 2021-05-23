@@ -24,7 +24,7 @@ module.exports = async (req, res, next) => {
   req.user = decodedToken;
   const dbUser = await User.findOne({ uid: decodedToken.uid });
   if (!dbUser) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: true,
       errorType: 'user',
       errorMessage: 'User does not exist.',
@@ -36,11 +36,12 @@ module.exports = async (req, res, next) => {
     .toLowerCase()
     .split('/')
     .includes('project');
-  if (!isRequestToProjectRoute)
+  if (!isRequestToProjectRoute) {
     for (let i = 0; i < dbUser.projects.length; i++) {
       delete dbUser.projects[i].secretToken;
       delete dbUser.projects[i].requests;
     }
+  }
 
   req.dbUser = dbUser;
   next();

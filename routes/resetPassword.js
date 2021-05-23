@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
   // get the request body and validate the data
   const validate = resetPasswordLinkSchema.validate(req.body);
   if (validate.error) {
-    return res.status(400).json({
+    return res.status(422).json({
       error: true,
       errorType: validate.error.details[0].path[0],
       errorMessage: validate.error.details[0].message,
@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
   // check if user exists
   const dbUser = await User.findOne({ email: req.body.email });
   if (!dbUser) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: true,
       errorType: 'user',
       errorMessage: 'User does not exist.',
@@ -50,7 +50,7 @@ router.post('/', async (req, res) => {
 
   return res.status(200).json({
     error: false,
-    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again.`,
+    successMessage: `Email has been sent. Please check your inbox! If you didn't receive one, please try again later.`,
   });
 });
 
@@ -63,10 +63,10 @@ router.patch('/', async (req, res) => {
   try {
     decodedToken = jwt.verify(token, process.env.JWT_KEY);
   } catch (err) {
-    return res.status(400).json({
+    return res.status(403).json({
       error: true,
       errorType: 'token',
-      errorMessage: 'Invalid token or broken link. Password reset failed',
+      errorMessage: 'Invalid token or broken link. Password reset failed.',
     });
   }
 
@@ -75,13 +75,13 @@ router.patch('/', async (req, res) => {
   const validate = resetPasswordSchema.validate(toUpdate);
   if (validate.error) {
     if (validate.error.details[0].path[0] === 'password') {
-      return res.status(400).json({
+      return res.status(422).json({
         error: true,
         errorType: validate.error.details[0].path[0],
         errorMessage: 'Password is required and should be at least 6 characters long and should include at least one uppercase letter and a number.'
       });
     }
-    return res.status(400).json({
+    return res.status(422).json({
       error: true,
       errorType: validate.error.details[0].path[0],
       errorMessage: validate.error.details[0].message,
@@ -91,7 +91,7 @@ router.patch('/', async (req, res) => {
   // check if user exists
   const dbUser = await User.findOne({ uid: decodedToken.uid });
   if (!dbUser) {
-    return res.status(400).json({
+    return res.status(404).json({
       error: true,
       errorType: 'user',
       errorMessage: 'User does not exist.',
@@ -104,7 +104,7 @@ router.patch('/', async (req, res) => {
     dbUser.password
   );
   if (isPasswordCorrect) {
-    return res.status(400).json({
+    return res.status(409).json({
       error: true,
       errorType: 'password',
       errorMessage: 'New password cannot be same as old password.',
@@ -112,25 +112,17 @@ router.patch('/', async (req, res) => {
   }
 
   // hash the new password
-  const newHashPassword = bcrypt.hashSync(
+  toUpdate.password = bcrypt.hashSync(
     toUpdate.password,
     bcrypt.genSaltSync(10)
   );
-  toUpdate.password = newHashPassword;
 
   // update the password in db
-  const updatedUserObject = await User.findOneAndUpdate(
+  await User.findOneAndUpdate(
     { uid: decodedToken.uid },
     { password: toUpdate.password },
     { new: true }
   );
-  if (!updatedUserObject) {
-    return res.status(400).json({
-      error: true,
-      errorType: 'user',
-      errorMessage: 'User does not exist.',
-    });
-  }
 
   // return successful message
   return res.status(200).json({
